@@ -1,3 +1,7 @@
+// Acessa os objetos globais definidos no index.html
+const database = firebase.database();
+const auth = firebase.auth();
+
 // Variáveis de escopo global
 let totalReceitas = 0;
 let totalDespesas = 0;
@@ -7,52 +11,54 @@ let investimentos = [];
 let metas = [];
 let dashboardChartInstance = null;
 let relatoriosChartInstance = null;
+let currentUserId = null;
+let isPremium = false; // Flag para o plano premium
 
 // Chaves para o Firebase
 const KEY_RECEITAS = 'receitas';
 const KEY_DESPESAS = 'despesas';
 const KEY_INVESTIMENTOS = 'investimentos';
 const KEY_METAS = 'metas';
-
-// Acessa o objeto de banco de dados global definido no index.html
-const database = firebase.database();
+const KEY_USERS = 'users';
 
 function formatarValor(valor) {
     return `R$ ${parseFloat(valor).toFixed(2).replace('.', ',')}`;
 }
 
-function getKey(base) {
-    const mes = document.getElementById('mes').value;
-    const ano = document.getElementById('ano').value;
-    if (base === KEY_INVESTIMENTOS || base === KEY_METAS) {
-        return base;
-    }
-    return `${base}_${mes}_${ano}`;
-}
-
-function salvarDados() {
-    // A função de salvar é chamada internamente. Não salva tudo de uma vez.
-}
-
 function carregarDados() {
-    // Carrega os dados específicos do mês/ano (receitas e despesas)
-    const receitasRef = database.ref(getKey(KEY_RECEITAS));
+    if (!currentUserId) return;
+
+    // Carrega dados do usuário (premium, nome, etc)
+    const userRef = database.ref(`${KEY_USERS}/${currentUserId}`);
+    userRef.on('value', (snapshot) => {
+        const userData = snapshot.val();
+        if (userData) {
+            document.querySelector('.user-profile h3').textContent = userData.name || 'Usuário';
+            isPremium = userData.isPremium || false;
+            // Exemplo: mostrarConteudoPremium(isPremium);
+        }
+    });
+
+    // Carrega os dados específicos do mês/ano
+    const receitasRef = database.ref(`${KEY_RECEITAS}/${currentUserId}`);
     receitasRef.on('value', (snapshot) => {
-        receitas = snapshot.val() ? Object.values(snapshot.val()) : [];
+        receitas = [];
+        snapshot.forEach(childSnapshot => {
+            receitas.push({ ...childSnapshot.val(), id: childSnapshot.key });
+        });
         totalReceitas = receitas.reduce((sum, item) => sum + item.valor, 0);
-        
-        // Atualiza a interface após carregar as receitas
         atualizarResumo();
         renderizarListaMovimentacoes();
         renderizarGraficoDashboard();
     });
 
-    const despesasRef = database.ref(getKey(KEY_DESPESAS));
+    const despesasRef = database.ref(`${KEY_DESPESAS}/${currentUserId}`);
     despesasRef.on('value', (snapshot) => {
-        despesas = snapshot.val() ? Object.values(snapshot.val()) : [];
+        despesas = [];
+        snapshot.forEach(childSnapshot => {
+            despesas.push({ ...childSnapshot.val(), id: childSnapshot.key });
+        });
         totalDespesas = despesas.reduce((sum, item) => sum + item.valor, 0);
-
-        // Atualiza a interface após carregar as despesas
         atualizarResumo();
         renderizarListaMovimentacoes();
         renderizarListaDespesas();
@@ -61,15 +67,21 @@ function carregarDados() {
     });
 
     // Carrega os dados globais (investimentos e metas)
-    const investimentosRef = database.ref(KEY_INVESTIMENTOS);
+    const investimentosRef = database.ref(`${KEY_INVESTIMENTOS}/${currentUserId}`);
     investimentosRef.on('value', (snapshot) => {
-        investimentos = snapshot.val() ? Object.values(snapshot.val()) : [];
+        investimentos = [];
+        snapshot.forEach(childSnapshot => {
+            investimentos.push({ ...childSnapshot.val(), id: childSnapshot.key });
+        });
         renderizarListaInvestimentos();
     });
 
-    const metasRef = database.ref(KEY_METAS);
+    const metasRef = database.ref(`${KEY_METAS}/${currentUserId}`);
     metasRef.on('value', (snapshot) => {
-        metas = snapshot.val() ? Object.values(snapshot.val()) : [];
+        metas = [];
+        snapshot.forEach(childSnapshot => {
+            metas.push({ ...childSnapshot.val(), id: childSnapshot.key });
+        });
         renderizarListaMetas();
     });
 }
@@ -77,8 +89,8 @@ function carregarDados() {
 function limparDados() {
     const confirma = confirm("Tem certeza que deseja apagar todas as movimentações (receitas e despesas) deste mês?");
     if (confirma) {
-        database.ref(getKey(KEY_RECEITAS)).remove();
-        database.ref(getKey(KEY_DESPESAS)).remove();
+        database.ref(`${KEY_RECEITAS}/${currentUserId}`).remove();
+        database.ref(`${KEY_DESPESAS}/${currentUserId}`).remove();
     }
 }
 
@@ -86,18 +98,115 @@ function initApp() {
     const hoje = new Date();
     document.getElementById('mes').value = hoje.getMonth() + 1;
     document.getElementById('ano').value = hoje.getFullYear();
-    
-    const hora = hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const hora = hoje.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
     let saudacao;
-    if (hoje.getHours() < 12) { saudacao = "Bom dia!"; } 
-    else if (hoje.getHours() < 18) { saudacao = "Boa tarde!"; }
-    else { saudacao = "Boa noite!"; }
+    if (hoje.getHours() < 12) {
+        saudacao = "Bom dia!";
+    } else if (hoje.getHours() < 18) {
+        saudacao = "Boa tarde!";
+    } else {
+        saudacao = "Boa noite!";
+    }
     document.getElementById('horaAtual').textContent = `${hora} ${saudacao}`;
 
-    carregarDados();
+    // Observa o estado de autenticação
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // Usuário logado
+            currentUserId = user.uid;
+            document.body.classList.add('logged-in');
+            carregarDados();
+            atualizarHeaderMes();
+        } else {
+            // Usuário deslogado
+            currentUserId = null;
+            document.body.classList.remove('logged-in');
+            // Limpa os dados na interface
+            receitas = [];
+            despesas = [];
+            investimentos = [];
+            metas = [];
+            atualizarResumo();
+            renderizarListaMovimentacoes();
+            renderizarListaDespesas();
+            renderizarListaInvestimentos();
+            renderizarListaMetas();
+        }
+    });
+
+    // Adiciona event listeners para os botões de login/cadastro
+    document.getElementById('login-btn').addEventListener('click', handleLogin);
+    document.getElementById('signup-btn').addEventListener('click', handleSignup);
+    document.querySelector('.header-info button').addEventListener('click', handleLogout);
+
     mostrarConteudo('dashboard');
     alternarCampos();
-    atualizarHeaderMes();
+}
+
+// Funções de Autenticação
+function handleLogin() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const errorEl = document.getElementById('auth-error');
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            console.log("Usuário logado com sucesso!");
+            errorEl.textContent = '';
+        })
+        .catch((error) => {
+            let errorMessage = "Erro ao fazer login. Verifique seu email e senha.";
+            if (error.code === 'auth/wrong-password') {
+                errorMessage = "Senha incorreta.";
+            } else if (error.code === 'auth/user-not-found') {
+                errorMessage = "Usuário não encontrado.";
+            }
+            errorEl.textContent = errorMessage;
+        });
+}
+
+function handleSignup() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const errorEl = document.getElementById('auth-error');
+
+    if (password.length < 6) {
+        errorEl.textContent = "A senha deve ter pelo menos 6 caracteres.";
+        return;
+    }
+
+    auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            console.log("Usuário criado com sucesso!");
+            // Cria um nó de usuário no banco de dados com a flag premium
+            database.ref(`${KEY_USERS}/${userCredential.user.uid}`).set({
+                email: email,
+                isPremium: false, // Define como false por padrão
+                name: 'Novo Usuário'
+            });
+            errorEl.textContent = '';
+        })
+        .catch((error) => {
+            let errorMessage = "Erro ao criar conta.";
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = "Este email já está em uso.";
+            }
+            errorEl.textContent = errorMessage;
+        });
+}
+
+function handleLogout() {
+    auth.signOut()
+        .then(() => {
+            console.log("Usuário deslogado com sucesso!");
+        })
+        .catch((error) => {
+            console.error("Erro ao deslogar:", error);
+        });
 }
 
 function atualizarHeaderMes() {
@@ -115,16 +224,19 @@ function atualizarResumo() {
 }
 
 function adicionarTransacao() {
+    if (!currentUserId) {
+        alert("Por favor, faça login para adicionar transações.");
+        return;
+    }
     const desc = document.getElementById('transacaoDesc').value;
     const valorInput = document.getElementById('transacaoValor');
     const valor = parseFloat(valorInput.value);
     const tipo = document.getElementById('transacaoTipo').value;
-    const categoria = document.getElementById('transacaoCategoria').value;
+    const categoria = tipo === 'despesa' ? document.getElementById('transacaoCategoria').value : 'salario';
     const meioPagamento = document.getElementById('tipoPagamento').value;
 
     if (desc && !isNaN(valor) && valor > 0) {
         const transacao = {
-            id: Date.now(), // Usamos o timestamp para um ID único
             descricao: desc,
             valor: valor,
             tipo: tipo,
@@ -132,18 +244,9 @@ function adicionarTransacao() {
             meioPagamento: meioPagamento,
             data: new Date().toLocaleDateString('pt-BR')
         };
+        const dbRef = database.ref(tipo === 'receita' ? `${KEY_RECEITAS}/${currentUserId}` : `${KEY_DESPESAS}/${currentUserId}`).push();
+        dbRef.set({ ...transacao, id: dbRef.key });
 
-        let dbRef;
-        if (tipo === 'receita') {
-            dbRef = database.ref(getKey(KEY_RECEITAS));
-        } else {
-            dbRef = database.ref(getKey(KEY_DESPESAS));
-        }
-        
-        // Adiciona a transação no Firebase
-        dbRef.push(transacao);
-
-        // Limpa os campos do formulário
         document.getElementById('transacaoDesc').value = '';
         document.getElementById('transacaoValor').value = '';
         document.getElementById('transacaoTipo').value = 'receita';
@@ -154,23 +257,17 @@ function adicionarTransacao() {
 }
 
 function removerTransacaoPorId(id, tipo) {
+    if (!currentUserId) return;
     let confirma = confirm("Tem certeza que deseja apagar esta movimentação?");
     if (!confirma) return;
 
-    let dbRef;
-    if (tipo === 'receita') {
-        dbRef = database.ref(getKey(KEY_RECEITAS));
-    } else {
-        dbRef = database.ref(getKey(KEY_DESPESAS));
-    }
-
-    dbRef.child(id).remove();
+    database.ref(`${tipo === 'receita' ? KEY_RECEITAS : KEY_DESPESAS}/${currentUserId}/${id}`).remove();
 }
 
 function renderizarListaMovimentacoes() {
     const listaTbody = document.getElementById('listaMovimentacoes');
     listaTbody.innerHTML = '';
-    
+
     const todasTransacoes = [...receitas, ...despesas];
     todasTransacoes.sort((a, b) => {
         const [dA, mA, aA] = a.data.split('/').map(Number);
@@ -184,7 +281,7 @@ function renderizarListaMovimentacoes() {
         const tr = document.createElement('tr');
         const valorCor = item.tipo === 'receita' ? '#2ecc71' : '#e74c3c';
         const tipoTexto = item.tipo === 'receita' ? 'Entrada' : 'Saída';
-        
+
         tr.innerHTML = `
             <td>${item.descricao}</td>
             <td style="color:${valorCor};">${formatarValor(item.valor)}</td>
@@ -204,7 +301,7 @@ function renderizarListaMovimentacoes() {
 function renderizarListaDespesas() {
     const listaTbody = document.getElementById('listaDespesas');
     listaTbody.innerHTML = '';
-    
+
     const despesasOrdenadas = [...despesas].sort((a, b) => {
         const [dA, mA, aA] = a.data.split('/').map(Number);
         const [dB, mB, aB] = b.data.split('/').map(Number);
@@ -216,7 +313,7 @@ function renderizarListaDespesas() {
     despesasOrdenadas.forEach(item => {
         const tr = document.createElement('tr');
         const valorCor = '#e74c3c';
-        
+
         tr.innerHTML = `
             <td>${item.descricao}</td>
             <td style="color:${valorCor};">${formatarValor(item.valor)}</td>
@@ -233,17 +330,21 @@ function renderizarListaDespesas() {
 }
 
 function adicionarInvestimento() {
+    if (!currentUserId) {
+        alert("Por favor, faça login para adicionar investimentos.");
+        return;
+    }
     const desc = document.getElementById('investimentoDesc').value;
     const valor = parseFloat(document.getElementById('investimentoValor').value);
 
     if (desc && !isNaN(valor) && valor > 0) {
         const investimento = {
-            id: Date.now(),
             descricao: desc,
             valor: valor,
             data: new Date().toLocaleDateString('pt-BR')
         };
-        database.ref(KEY_INVESTIMENTOS).push(investimento);
+        const dbRef = database.ref(`${KEY_INVESTIMENTOS}/${currentUserId}`).push();
+        dbRef.set({ ...investimento, id: dbRef.key });
         document.getElementById('investimentoDesc').value = '';
         document.getElementById('investimentoValor').value = '';
     } else {
@@ -278,26 +379,31 @@ function renderizarListaInvestimentos() {
 }
 
 function removerInvestimentoPorId(id) {
+    if (!currentUserId) return;
     let confirma = confirm("Tem certeza que deseja apagar este investimento?");
     if (!confirma) return;
 
-    database.ref(KEY_INVESTIMENTOS).child(id).remove();
+    database.ref(`${KEY_INVESTIMENTOS}/${currentUserId}/${id}`).remove();
 }
 
 function adicionarMeta() {
+    if (!currentUserId) {
+        alert("Por favor, faça login para adicionar metas.");
+        return;
+    }
     const desc = document.getElementById('metaDesc').value;
     const alvo = parseFloat(document.getElementById('metaAlvo').value);
     const atual = parseFloat(document.getElementById('metaAtual').value);
 
     if (desc && !isNaN(alvo) && alvo > 0 && !isNaN(atual) && atual >= 0) {
         const meta = {
-            id: Date.now(),
             descricao: desc,
             alvo: alvo,
             atual: atual,
             progresso: (atual / alvo) * 100
         };
-        database.ref(KEY_METAS).push(meta);
+        const dbRef = database.ref(`${KEY_METAS}/${currentUserId}`).push();
+        dbRef.set({ ...meta, id: dbRef.key });
         document.getElementById('metaDesc').value = '';
         document.getElementById('metaAlvo').value = '';
         document.getElementById('metaAtual').value = '';
@@ -309,7 +415,7 @@ function adicionarMeta() {
 function renderizarListaMetas() {
     const listaDiv = document.getElementById('listaMetas');
     listaDiv.innerHTML = '';
-    
+
     metas.forEach(item => {
         const progress = item.progresso > 100 ? 100 : item.progresso;
         const metaDiv = document.createElement('div');
@@ -329,10 +435,11 @@ function renderizarListaMetas() {
 }
 
 function removerMetaPorId(id) {
+    if (!currentUserId) return;
     let confirma = confirm("Tem certeza que deseja apagar esta meta?");
     if (!confirma) return;
 
-    database.ref(KEY_METAS).child(id).remove();
+    database.ref(`${KEY_METAS}/${currentUserId}/${id}`).remove();
 }
 
 function mostrarConteudo(id) {
@@ -359,7 +466,7 @@ function mostrarConteudo(id) {
 function alternarCampos() {
     const tipo = document.getElementById('transacaoTipo').value;
     const categoriaSelect = document.getElementById('transacaoCategoria');
-    
+
     categoriaSelect.innerHTML = '';
 
     if (tipo === 'receita') {
@@ -383,7 +490,7 @@ function alternarCampos() {
 
 function renderizarGraficoDashboard() {
     const ctx = document.getElementById('receitasDespesasChart').getContext('2d');
-    
+
     if (dashboardChartInstance) {
         dashboardChartInstance.destroy();
     }
@@ -430,7 +537,7 @@ function renderizarGraficoDashboard() {
 
 function renderizarGraficoRelatorios() {
     const ctx = document.getElementById('despesasPorCategoriaChart').getContext('2d');
-    
+
     if (relatoriosChartInstance) {
         relatoriosChartInstance.destroy();
     }
@@ -520,3 +627,5 @@ function renderizarGraficoRelatorios() {
         }
     });
 }
+// Inicia o aplicativo
+initApp();
