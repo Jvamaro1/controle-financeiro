@@ -157,7 +157,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <div id="content-despesas" class="main-content">
                 <h2>Gerenciar Despesas</h2>
                 <div class="despesas-section">
@@ -251,6 +251,26 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // Sua configuração do projeto Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPkYOG9BdBkGCVIZOIQigKMN-yQP_p1S8",
+            authDomain: "controle-financeiro-55062.firebaseapp.com",
+            projectId: "controle-financeiro-55062",
+            storageBucket: "controle-financeiro-55062.firebasestorage.app",
+            messagingSenderId: "96852370466",
+            appId: "1:96852370466:web:ef255f1224b70b2428967b"
+        };
+
+        // Inicializa o Firebase e o banco de dados
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+    </script>
+    
     <script src="main.js"></script>
 </body>
 </html>
