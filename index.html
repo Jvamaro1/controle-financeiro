@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Control</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body onload="initApp()">
+
+    <div class="app-container">
+
+        <div class="sidebar">
+            <div class="user-profile">
+                <h3>João Victor Amaro</h3>
+                <small id="horaAtual"></small>
+            </div>
+            <nav class="nav-menu">
+                <ul>
+                    <li id="menu-dashboard" onclick="mostrarConteudo('dashboard')">
+                        <span>📊 Dashboard</span>
+                    </li>
+                    <li id="menu-relatorios" onclick="mostrarConteudo('relatorios')">
+                        <span>📈 Relatórios</span>
+                    </li>
+                    <li id="menu-despesas" onclick="mostrarConteudo('despesas')">
+                        <span>💸 Despesas</span>
+                    </li>
+                    <li id="menu-investimentos" onclick="mostrarConteudo('investimentos')">
+                        <span>💰 Investimentos</span>
+                    </li>
+                    <li id="menu-metas" onclick="mostrarConteudo('metas')">
+                        <span>🎯 Metas</span>
+                    </li>
+                    <li id="menu-cartoes" onclick="mostrarConteudo('cartoes')">
+                        <span>💳 Cartões</span>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <div class="main-content-wrapper">
+
+            <div id="content-dashboard" class="main-content active">
+                <header>
+                    <span>Seu dinheiro seguro!</span>
+                    <div class="header-info">
+                        Mês: <span id="mesAtual"></span>
+                        <button>Sair</button>
+                    </div>
+                </header>
+
+                <div class="summary-cards-container">
+                    <div class="summary-card">
+                        <h3>Receita Mensal</h3>
+                        <div class="summary-value valor-receita" id="totalReceitas">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Despesa Mensal</h3>
+                        <div class="summary-value valor-despesa" id="totalDespesas">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Saldo</h3>
+                        <div class="summary-value valor-saldo" id="saldoMes">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Receita vs. Despesas</h3>
+                        <div class="chart-container">
+                            <canvas id="receitasDespesasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Adicionar Movimentação</h3>
+                    <div class="input-row" style="margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
+                        <label for="mes">Mês:</label>
+                        <select id="mes" onchange="carregarDados()" style="padding: 8px; border-radius: 5px;">
+                            <option value="1">Janeiro</option>
+                            <option value="2">Fevereiro</option>
+                            <option value="3">Março</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Maio</option>
+                            <option value="6">Junho</option>
+                            <option value="7">Julho</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Setembro</option>
+                            <option value="10">Outubro</option>
+                            <option value="11">Novembro</option>
+                            <option value="12">Dezembro</option>
+                        </select>
+                        <label for="ano">Ano:</label>
+                        <input type="number" id="ano" min="2000" max="2100" onchange="carregarDados()" style="padding: 8px; border-radius: 5px; max-width: 100px;">
+                        <button class="form-add-btn" onclick="limparDados()" style="background: #e74c3c; box-shadow: none;">Limpar Mês</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="transacaoDesc">Descrição</label>
+                            <input type="text" id="transacaoDesc" placeholder="Ex: Compra de teclado">
+                        </div>
+                        <div class="form-field">
+                            <label for="transacaoValor">Valor</label>
+                            <input type="number" id="transacaoValor" placeholder="Ex: 800.00">
+                        </div>
+                        <div class="form-field">
+                            <label for="transacaoTipo">Tipo</label>
+                            <select id="transacaoTipo" onchange="alternarCampos()">
+                                <option value="receita">Receita</option>
+                                <option value="despesa">Despesa</option>
+                            </select>
+                        </div>
+                        <div class="form-field" id="campoTipoPagamento">
+                            <label for="tipoPagamento">Meio</label>
+                            <select id="tipoPagamento">
+                                <option value="credito">Crédito</option>
+                                <option value="debito_pix">Débito/Pix</option>
+                                <option value="dinheiro">Dinheiro</option>
+                            </select>
+                        </div>
+                        <div class="form-field" id="campoCategoria">
+                            <label for="transacaoCategoria">Categoria</label>
+                            <select id="transacaoCategoria">
+                                <option value="salario">Salário</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                        <button class="form-add-btn" onclick="adicionarTransacao()">Adicionar</button>
+                    </div>
+                </div>
+
+                <div class="movimentacoes-section">
+                    <h3>Últimas Movimentações</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Categoria</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaMovimentacoes">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="content-relatorios" class="main-content">
+                <h2>Relatórios de Despesas por Categoria</h2>
+                <div class="relatorios-section">
+                    <p>Veja a distribuição de seus gastos por categoria para o mês atual.</p>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="despesasPorCategoriaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-despesas" class="main-content">
+                <h2>Gerenciar Despesas</h2>
+                <div class="despesas-section">
+                    <p>Aqui estão todas as suas despesas para o mês atual, de forma detalhada.</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaDespesas">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="content-investimentos" class="main-content">
+                <h2>Gerenciar Investimentos</h2>
+                <div class="investimentos-section">
+                    <h3>Adicionar Novo Investimento</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="investimentoDesc">Descrição</label>
+                            <input type="text" id="investimentoDesc" placeholder="Ex: Ação da Empresa X">
+                        </div>
+                        <div class="form-field">
+                            <label for="investimentoValor">Valor</label>
+                            <input type="number" id="investimentoValor" placeholder="Ex: 1000.00">
+                        </div>
+                        <button class="form-add-btn" onclick="adicionarInvestimento()">Adicionar</button>
+                    </div>
+                </div>
+                <div class="investimentos-section">
+                    <h3>Meus Investimentos</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Data</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaInvestimentos">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="content-metas" class="main-content">
+                <h2>Definir Metas Financeiras</h2>
+                <div class="metas-section">
+                    <h3>Adicionar Nova Meta</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="metaDesc">Descrição</label>
+                            <input type="text" id="metaDesc" placeholder="Ex: Viagem para o Japão">
+                        </div>
+                        <div class="form-field">
+                            <label for="metaAlvo">Valor Alvo</label>
+                            <input type="number" id="metaAlvo" placeholder="Ex: 5000.00">
+                        </div>
+                        <div class="form-field">
+                            <label for="metaAtual">Valor Atual</label>
+                            <input type="number" id="metaAtual" placeholder="Ex: 500.00">
+                        </div>
+                        <button class="form-add-btn" onclick="adicionarMeta()">Adicionar</button>
+                    </div>
+                </div>
+                <div class="metas-section">
+                    <h3>Minhas Metas</h3>
+                    <div id="listaMetas">
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-cartoes" class="main-content">
+                <h2>Cartões de Crédito</h2>
+                <p>Acompanhe as faturas e limites de seus cartões.</p>
+                <div class="card-section">
+                    <p>Esta seção ainda está em construção. Aqui você poderá adicionar e gerenciar seus cartões de crédito.</p>
+                    <p>Recursos futuros: Visão geral de faturas, limites, datas de vencimento e históricos de transações.</p>
+                </div>
+            </div>
+
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

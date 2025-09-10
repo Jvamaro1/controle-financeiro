@@ -1,0 +1,372 @@
+/* Estilos base */
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Preferência para Inter, ou fallback */
+    background: #f0f2f5; /* Fundo mais claro e suave */
+    color: #333;
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Container principal com layout de colunas */
+.app-container {
+    display: flex;
+    width: 100%;
+}
+
+/* Sidebar - Barra lateral de navegação */
+.sidebar {
+    background: linear-gradient(135deg, #4a69bd 0%, #3b5998 100%); /* Gradiente azul escuro */
+    color: white;
+    padding: 25px 20px; /* Mais padding */
+    width: 260px; /* Ligeiramente mais larga */
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15); /* Sombra mais presente */
+    display: flex;
+    flex-direction: column;
+    gap: 25px; /* Mais espaço entre elementos */
+    border-top-right-radius: 15px; /* Bordas arredondadas */
+    border-bottom-right-radius: 15px;
+}
+
+.user-profile {
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25); /* Linha divisória mais suave */
+    padding-bottom: 20px;
+}
+
+.user-profile img {
+    width: 85px; /* Ligeiramente maior */
+    height: 85px;
+    border-radius: 50%;
+    border: 4px solid #fff; /* Borda mais grossa */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); /* Sombra na imagem */
+}
+
+.user-profile h3 {
+    margin: 12px 0 0;
+    font-size: 1.3rem; /* Fonte maior */
+    font-weight: 600;
+}
+
+.user-profile small {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.nav-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-menu li {
+    padding: 18px 20px; /* Mais padding */
+    cursor: pointer;
+    transition: all 0.3s ease; /* Transição suave para hover */
+    border-radius: 10px; /* Bordas mais arredondadas */
+    margin-bottom: 8px; /* Espaço entre itens */
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Espaço entre ícone e texto */
+    font-weight: 500;
+}
+
+.nav-menu li:hover {
+    background-color: rgba(255, 255, 255, 0.15); /* Hover mais evidente */
+    transform: translateX(5px); /* Efeito de deslizar */
+}
+
+.nav-menu li.active {
+    background-color: rgba(255, 255, 255, 0.25); /* Ativo mais escuro */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Main Content - Conteúdo principal */
+.main-content {
+    flex-grow: 1;
+    padding: 40px; /* Mais padding */
+    display: none;
+}
+
+.main-content.active {
+    display: block;
+}
+
+.main-content-wrapper {
+    flex-grow: 1;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px; /* Mais espaço */
+    color: #555;
+    font-size: 1.3rem; /* Fonte maior */
+    font-weight: 500;
+}
+
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Mais espaço */
+    font-size: 1.1rem;
+}
+
+.header-info button {
+    background-color: #e74c3c; /* Vermelho mais suave */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.header-info button:hover {
+    background-color: #c0392b;
+}
+
+/* Cartões de Resumo no topo */
+.summary-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adaptável */
+    gap: 25px; /* Mais espaço */
+    margin-bottom: 40px;
+}
+
+.summary-card {
+    background-color: #fff;
+    padding: 25px; /* Mais padding */
+    border-radius: 12px; /* Bordas mais arredondadas */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); /* Sombra mais sutil */
+    transition: transform 0.2s ease; /* Efeito de hover */
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+}
+
+.summary-card h3 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+    color: #6a7f9b;
+}
+
+.summary-value {
+    font-size: 2rem; /* Valores maiores */
+    font-weight: bold;
+}
+
+.valor-receita { color: #2ecc71; } /* Verde mais vibrante */
+.valor-despesa { color: #e74c3c; } /* Vermelho mais suave */
+.valor-saldo { color: #2c3e50; }
+
+/* Formulário de Adição e Seções */
+.form-section, .movimentacoes-section, .relatorios-section, .despesas-section, .investimentos-section, .metas-section, .card-section {
+    background-color: #fff;
+    padding: 30px; /* Mais padding */
+    border-radius: 15px; /* Bordas mais arredondadas */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); /* Sombra mais forte */
+    margin-bottom: 30px;
+}
+
+.form-section h3, .movimentacoes-section h3, .relatorios-section h3, .despesas-section h3, .investimentos-section h3, .metas-section h3 {
+    margin-top: 0;
+    margin-bottom: 25px; /* Mais espaço */
+    color: #4a69bd; /* Azul da sidebar */
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Mais espaço */
+    align-items: flex-end;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 180px; /* Largura mínima para campos */
+}
+
+.form-field label {
+    margin-bottom: 8px; /* Mais espaço */
+    font-weight: bold;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.form-field input, .form-field select {
+    padding: 12px; /* Mais padding */
+    border: 1px solid #ddd;
+    border-radius: 8px; /* Bordas mais arredondadas */
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-field input:focus, .form-field select:focus {
+    outline: none;
+    border-color: #4a69bd; /* Borda azul ao focar */
+    box-shadow: 0 0 0 3px rgba(74, 105, 189, 0.2);
+}
+
+.form-add-btn {
+    background: linear-gradient(45deg, #2ecc71 0%, #27ae60 100%); /* Gradiente verde */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+}
+
+.form-add-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(46, 204, 113, 0.4);
+}
+
+/* Tabela de Movimentações */
+table {
+    width: 100%;
+    border-collapse: separate; /* Para bordas arredondadas */
+    border-spacing: 0;
+    text-align: left;
+    border-radius: 10px;
+    overflow: hidden; /* Para garantir que as bordas arredondadas funcionem no thead/tbody */
+}
+
+th, td {
+    padding: 15px; /* Mais padding */
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background-color: #f7f9fc;
+    font-weight: bold;
+    color: #6a7f9b;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+tr:last-child td {
+    border-bottom: none; /* Remove a borda da última linha */
+}
+
+.action-btns {
+    display: flex;
+    gap: 8px; /* Espaço entre botões */
+}
+
+.action-btns button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.3rem; /* Ícone maior */
+    color: #888;
+    transition: color 0.2s ease;
+}
+.action-btns button:hover {
+    color: #e74c3c; /* Vermelho ao hover */
+}
+
+/* Gráfico de Referência */
+.chart-container {
+    height: 220px; /* Altura um pouco maior */
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#receitasDespesasChart {
+    max-width: 180px; /* Ligeiramente maior */
+    max-height: 180px;
+}
+
+/* Estilos para a barra de progresso das Metas */
+.progress-bar-container {
+    background-color: #e0e0e0;
+    border-radius: 12px; /* Bordas mais arredondadas */
+    margin-top: 15px;
+    overflow: hidden;
+    width: 100%;
+    height: 25px; /* Altura maior */
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #5dade2 0%, #3498db 100%); /* Gradiente azul */
+    height: 100%;
+    width: 0%;
+    transition: width 0.7s ease-in-out;
+    text-align: right;
+    color: white;
+    font-size: 0.9rem;
+    line-height: 25px;
+    padding-right: 8px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsividade */
+@media (max-width: 900px) {
+    .app-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        border-radius: 0;
+        padding: 15px;
+        flex-direction: row; /* Sidebar em linha para telas menores */
+        justify-content: space-around;
+        align-items: center;
+    }
+    .user-profile {
+        display: none; /* Esconde perfil na sidebar menor */
+    }
+    .nav-menu ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .nav-menu li {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+        gap: 8px;
+    }
+    .main-content {
+        padding: 20px;
+    }
+    .summary-cards-container {
+        grid-template-columns: 1fr; /* Coluna única em telas menores */
+    }
+    .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .form-add-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .nav-menu li {
+        flex-direction: column; /* Ícone e texto em coluna */
+        padding: 8px 5px;
+    }
+    .nav-menu li span {
+        font-size: 0.75rem;
+    }
+}
