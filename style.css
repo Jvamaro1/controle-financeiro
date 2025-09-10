@@ -4,16 +4,17 @@ body {
     background: #f0f2f5;
     color: #333;
     margin: 0;
-    display: flex;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Container principal do app */
+/* Container principal do app (visível após o login) */
 .app-container {
-    display: flex;
+    display: none; /* Inicia oculto */
+    flex-direction: row;
     width: 100%;
-    /* Estilo para a tela de login/logout */
-    display: none;
+    height: 100%;
 }
 
 /* Estilos da Sidebar */
@@ -31,6 +32,7 @@ body {
     top: 0;
     height: 100vh;
     box-sizing: border-box;
+    transition: width 0.3s ease;
 }
 
 .user-profile {
@@ -129,6 +131,11 @@ header {
     cursor: pointer;
     font-weight: 600;
     font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.header-info button:hover {
+    color: #c0392b;
 }
 
 .summary-cards-container {
@@ -158,9 +165,17 @@ header {
     font-weight: 600;
 }
 
-.valor-receita { color: #2ecc71; }
-.valor-despesa { color: #e74c3c; }
-.valor-saldo { color: #3498db; }
+.valor-receita {
+    color: #2ecc71;
+}
+
+.valor-despesa {
+    color: #e74c3c;
+}
+
+.valor-saldo {
+    color: #3498db;
+}
 
 .chart-container {
     margin-top: 20px;
@@ -206,6 +221,13 @@ h2, h3 {
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-field input:focus, .form-field select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
 
 .form-add-btn {
@@ -215,12 +237,13 @@ h2, h3 {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: background 0.3s ease, transform 0.2s ease;
     font-weight: 600;
 }
 
 .form-add-btn:hover {
     background: #2980b9;
+    transform: translateY(-2px);
 }
 
 table {
@@ -247,17 +270,17 @@ table tbody tr:hover {
     background-color: #f2f2f2;
 }
 
-.acao-btn {
-    padding: 5px 10px;
+.action-btns button {
+    background: none;
     border: none;
-    border-radius: 4px;
-    color: white;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 1.2rem;
+    color: #e74c3c;
+    transition: transform 0.2s ease;
 }
 
-.acao-btn.remover {
-    background-color: #e74c3c;
+.action-btns button:hover {
+    transform: scale(1.1);
 }
 
 /* Estilos de Metas */
@@ -283,11 +306,12 @@ table tbody tr:hover {
     color: white;
     font-size: 0.8rem;
     line-height: 20px;
+    transition: width 0.5s ease-in-out;
 }
 
 /* Estilos da tela de login */
 #auth-container {
-    display: flex;
+    display: flex; /* Inicia visível */
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -296,6 +320,7 @@ table tbody tr:hover {
     background: #f0f2f5;
     padding: 20px;
     box-sizing: border-box;
+    transition: opacity 0.5s ease;
 }
 
 .auth-form {
@@ -315,6 +340,12 @@ table tbody tr:hover {
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.auth-form input:focus {
+    border-color: #3498db;
+    outline: none;
 }
 
 .auth-buttons {
@@ -354,18 +385,4 @@ table tbody tr:hover {
     color: #e74c3c;
     text-align: center;
     font-size: 14px;
-}
-
-/* Oculta o app-container por padrão */
-.app-container {
-    display: none;
-}
-
-/* Mostra o app-container quando o login é feito */
-body.logged-in .app-container {
-    display: flex;
-}
-
-body.logged-in #auth-container {
-    display: none;
 }

@@ -28,7 +28,7 @@
 
         <div class="sidebar">
             <div class="user-profile">
-                <h3>João Victor Amaro</h3>
+                <h3>Nome do Usuário</h3>
                 <small id="horaAtual"></small>
             </div>
             <nav class="nav-menu">
@@ -266,102 +266,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module">
-        // Importa os módulos necessários
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
-
-        // Sua configuração do projeto Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDPkYOG9BdBkGCVIZOIQigKMN-yQP_p1S8",
-            authDomain: "controle-financeiro-55062.firebaseapp.com",
-            projectId: "controle-financeiro-55062",
-            storageBucket: "controle-financeiro-55062.firebasestorage.app",
-            messagingSenderId: "96852370466",
-            appId: "1:96852370466:web:ef255f1224b70b2428967b"
-        };
-
-        // Inicializa o Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app); // Inicializa o módulo de autenticação
-        const database = getDatabase(app); // Inicializa o módulo do banco de dados
-
-        // Exponha o auth e o database globalmente para que main.js possa usá-los
-        window.firebase = { auth, database };
-        window.onAuthStateChanged = onAuthStateChanged;
-        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-        window.signOut = signOut;
-        window.ref = ref;
-        window.set = set;
-        window.onValue = onValue;
-        window.remove = remove;
-        window.getDatabase = getDatabase;
-
-        // Adiciona a lógica de autenticação
-        const authContainer = document.getElementById('auth-container');
-        const appContainer = document.querySelector('.app-container');
-        const logoutBtn = document.querySelector('.logout-btn');
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Usuário está logado
-                authContainer.style.display = 'none';
-                appContainer.style.display = 'flex';
-                console.log("Usuário logado:", user);
-            } else {
-                // Usuário não está logado
-                authContainer.style.display = 'flex';
-                appContainer.style.display = 'none';
-                console.log("Nenhum usuário logado.");
-            }
-        });
-
-        document.getElementById('signup-btn').addEventListener('click', () => {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const errorElement = document.getElementById('auth-error');
-
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    console.log("Usuário criado com sucesso!", userCredential.user);
-                    errorElement.textContent = "Conta criada com sucesso!";
-                })
-                .catch((error) => {
-                    const errorMessage = error.message;
-                    console.error("Erro ao criar conta:", errorMessage);
-                    errorElement.textContent = `Erro: ${errorMessage}`;
-                });
-        });
-
-        document.getElementById('login-btn').addEventListener('click', () => {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const errorElement = document.getElementById('auth-error');
-
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    console.log("Login realizado com sucesso!", userCredential.user);
-                })
-                .catch((error) => {
-                    const errorMessage = error.message;
-                    console.error("Erro ao fazer login:", errorMessage);
-                    errorElement.textContent = `Erro: ${errorMessage}`;
-                });
-        });
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                signOut(auth).then(() => {
-                    console.log("Usuário deslogado com sucesso.");
-                }).catch((error) => {
-                    console.error("Erro ao fazer logout:", error);
-                });
-            });
-        }
-    </script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js"></script>
     
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
