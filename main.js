@@ -8,10 +8,14 @@ let metas = [];
 let dashboardChartInstance = null;
 let relatoriosChartInstance = null;
 
+// Chaves para o Firebase
 const KEY_RECEITAS = 'receitas';
 const KEY_DESPESAS = 'despesas';
-const KEY_INVESTIMENTOS = 'investimentos'; // Não precisa de mês/ano para investimentos e metas
+const KEY_INVESTIMENTOS = 'investimentos';
 const KEY_METAS = 'metas';
+
+// Acessa o objeto de banco de dados global definido no index.html
+const database = firebase.database();
 
 function formatarValor(valor) {
     return `R$ ${parseFloat(valor).toFixed(2).replace('.', ',')}`;
@@ -20,7 +24,6 @@ function formatarValor(valor) {
 function getKey(base) {
     const mes = document.getElementById('mes').value;
     const ano = document.getElementById('ano').value;
-    // Investimentos e metas são globais, não dependem do mês/ano
     if (base === KEY_INVESTIMENTOS || base === KEY_METAS) {
         return base;
     }
@@ -28,48 +31,54 @@ function getKey(base) {
 }
 
 function salvarDados() {
-    localStorage.setItem(getKey(KEY_RECEITAS), JSON.stringify(receitas));
-    localStorage.setItem(getKey(KEY_DESPESAS), JSON.stringify(despesas));
-    localStorage.setItem(KEY_INVESTIMENTOS, JSON.stringify(investimentos));
-    localStorage.setItem(KEY_METAS, JSON.stringify(metas));
+    // A função de salvar é chamada internamente. Não salva tudo de uma vez.
 }
 
 function carregarDados() {
-    // Carregar dados específicos do mês/ano
-    const dadosReceitas = localStorage.getItem(getKey(KEY_RECEITAS));
-    const dadosDespesas = localStorage.getItem(getKey(KEY_DESPESAS));
-    
-    totalReceitas = 0;
-    totalDespesas = 0;
+    // Carrega os dados específicos do mês/ano (receitas e despesas)
+    const receitasRef = database.ref(getKey(KEY_RECEITAS));
+    receitasRef.on('value', (snapshot) => {
+        receitas = snapshot.val() ? Object.values(snapshot.val()) : [];
+        totalReceitas = receitas.reduce((sum, item) => sum + item.valor, 0);
+        
+        // Atualiza a interface após carregar as receitas
+        atualizarResumo();
+        renderizarListaMovimentacoes();
+        renderizarGraficoDashboard();
+    });
 
-    receitas = dadosReceitas ? JSON.parse(dadosReceitas) : [];
-    despesas = dadosDespesas ? JSON.parse(dadosDespesas) : [];
-    
-    receitas.forEach(item => totalReceitas += item.valor);
-    despesas.forEach(item => totalDespesas += item.valor);
+    const despesasRef = database.ref(getKey(KEY_DESPESAS));
+    despesasRef.on('value', (snapshot) => {
+        despesas = snapshot.val() ? Object.values(snapshot.val()) : [];
+        totalDespesas = despesas.reduce((sum, item) => sum + item.valor, 0);
 
-    // Carregar dados globais (investimentos e metas)
-    const dadosInvestimentos = localStorage.getItem(KEY_INVESTIMENTOS);
-    const dadosMetas = localStorage.getItem(KEY_METAS);
-    investimentos = dadosInvestimentos ? JSON.parse(dadosInvestimentos) : [];
-    metas = dadosMetas ? JSON.parse(dadosMetas) : [];
-    
-    atualizarResumo();
-    renderizarListaMovimentacoes();
-    renderizarListaDespesas();
-    renderizarListaInvestimentos(); // Chamar para investimentos
-    renderizarListaMetas();         // Chamar para metas
-    atualizarHeaderMes();
-    renderizarGraficoDashboard();
-    renderizarGraficoRelatorios();
+        // Atualiza a interface após carregar as despesas
+        atualizarResumo();
+        renderizarListaMovimentacoes();
+        renderizarListaDespesas();
+        renderizarGraficoDashboard();
+        renderizarGraficoRelatorios();
+    });
+
+    // Carrega os dados globais (investimentos e metas)
+    const investimentosRef = database.ref(KEY_INVESTIMENTOS);
+    investimentosRef.on('value', (snapshot) => {
+        investimentos = snapshot.val() ? Object.values(snapshot.val()) : [];
+        renderizarListaInvestimentos();
+    });
+
+    const metasRef = database.ref(KEY_METAS);
+    metasRef.on('value', (snapshot) => {
+        metas = snapshot.val() ? Object.values(snapshot.val()) : [];
+        renderizarListaMetas();
+    });
 }
 
 function limparDados() {
     const confirma = confirm("Tem certeza que deseja apagar todas as movimentações (receitas e despesas) deste mês?");
     if (confirma) {
-        localStorage.removeItem(getKey(KEY_RECEITAS));
-        localStorage.removeItem(getKey(KEY_DESPESAS));
-        carregarDados(); // Recarrega os dados (que agora estarão vazios para o mês)
+        database.ref(getKey(KEY_RECEITAS)).remove();
+        database.ref(getKey(KEY_DESPESAS)).remove();
     }
 }
 
@@ -88,6 +97,7 @@ function initApp() {
     carregarDados();
     mostrarConteudo('dashboard');
     alternarCampos();
+    atualizarHeaderMes();
 }
 
 function atualizarHeaderMes() {
@@ -110,28 +120,30 @@ function adicionarTransacao() {
     const valor = parseFloat(valorInput.value);
     const tipo = document.getElementById('transacaoTipo').value;
     const categoria = document.getElementById('transacaoCategoria').value;
+    const meioPagamento = document.getElementById('tipoPagamento').value;
 
     if (desc && !isNaN(valor) && valor > 0) {
         const transacao = {
-            id: Date.now(),
+            id: Date.now(), // Usamos o timestamp para um ID único
             descricao: desc,
             valor: valor,
             tipo: tipo,
             categoria: categoria,
+            meioPagamento: meioPagamento,
             data: new Date().toLocaleDateString('pt-BR')
         };
 
+        let dbRef;
         if (tipo === 'receita') {
-            receitas.push(transacao);
-            totalReceitas += valor;
+            dbRef = database.ref(getKey(KEY_RECEITAS));
         } else {
-            despesas.push(transacao);
-            totalDespesas += valor;
+            dbRef = database.ref(getKey(KEY_DESPESAS));
         }
         
-        salvarDados();
-        carregarDados(); // Recarrega todos os dados para atualizar as listas e gráficos
-        
+        // Adiciona a transação no Firebase
+        dbRef.push(transacao);
+
+        // Limpa os campos do formulário
         document.getElementById('transacaoDesc').value = '';
         document.getElementById('transacaoValor').value = '';
         document.getElementById('transacaoTipo').value = 'receita';
@@ -139,6 +151,20 @@ function adicionarTransacao() {
     } else {
         alert("Por favor, preencha a descrição e um valor válido.");
     }
+}
+
+function removerTransacaoPorId(id, tipo) {
+    let confirma = confirm("Tem certeza que deseja apagar esta movimentação?");
+    if (!confirma) return;
+
+    let dbRef;
+    if (tipo === 'receita') {
+        dbRef = database.ref(getKey(KEY_RECEITAS));
+    } else {
+        dbRef = database.ref(getKey(KEY_DESPESAS));
+    }
+
+    dbRef.child(id).remove();
 }
 
 function renderizarListaMovimentacoes() {
@@ -151,7 +177,7 @@ function renderizarListaMovimentacoes() {
         const [dB, mB, aB] = b.data.split('/').map(Number);
         const dataA = new Date(aA, mA - 1, dA);
         const dataB = new Date(aB, mB - 1, dB);
-        return dataB - dataA; // Ordena da mais recente para a mais antiga
+        return dataB - dataA;
     });
 
     todasTransacoes.forEach(item => {
@@ -167,7 +193,7 @@ function renderizarListaMovimentacoes() {
             <td>${item.categoria}</td>
             <td>
                 <div class="action-btns">
-                    <button onclick="removerTransacaoPorId(${item.id}, '${item.tipo}')">🗑️</button>
+                    <button onclick="removerTransacaoPorId('${item.id}', '${item.tipo}')">🗑️</button>
                 </div>
             </td>
         `;
@@ -198,25 +224,115 @@ function renderizarListaDespesas() {
             <td>${item.categoria}</td>
             <td>
                 <div class="action-btns">
-                    <button onclick="removerTransacaoPorId(${item.id}, 'despesa')">🗑️</button>
+                    <button onclick="removerTransacaoPorId('${item.id}', 'despesa')">🗑️</button>
                 </div>
             </td>
         `;
         listaTbody.appendChild(tr);
     });
 }
-        
-function removerTransacaoPorId(id, tipo) {
-    let confirma = confirm("Tem certeza que deseja apagar esta movimentação?");
+
+function adicionarInvestimento() {
+    const desc = document.getElementById('investimentoDesc').value;
+    const valor = parseFloat(document.getElementById('investimentoValor').value);
+
+    if (desc && !isNaN(valor) && valor > 0) {
+        const investimento = {
+            id: Date.now(),
+            descricao: desc,
+            valor: valor,
+            data: new Date().toLocaleDateString('pt-BR')
+        };
+        database.ref(KEY_INVESTIMENTOS).push(investimento);
+        document.getElementById('investimentoDesc').value = '';
+        document.getElementById('investimentoValor').value = '';
+    } else {
+        alert("Por favor, preencha a descrição e um valor válido.");
+    }
+}
+
+function renderizarListaInvestimentos() {
+    const listaTbody = document.getElementById('listaInvestimentos');
+    listaTbody.innerHTML = '';
+
+    const investimentosOrdenados = [...investimentos].sort((a, b) => {
+        const [dA, mA, aA] = a.data.split('/').map(Number);
+        const [dB, mB, aB] = b.data.split('/').map(Number);
+        const dataA = new Date(aA, mA - 1, dA);
+        const dataB = new Date(aB, mB - 1, dB);
+        return dataB - dataA;
+    });
+
+    investimentosOrdenados.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.descricao}</td>
+            <td>${formatarValor(item.valor)}</td>
+            <td>${item.data}</td>
+            <td>
+                <button onclick="removerInvestimentoPorId('${item.id}')">🗑️</button>
+            </td>
+        `;
+        listaTbody.appendChild(tr);
+    });
+}
+
+function removerInvestimentoPorId(id) {
+    let confirma = confirm("Tem certeza que deseja apagar este investimento?");
     if (!confirma) return;
 
-    if (tipo === 'receita') {
-        receitas = receitas.filter(r => r.id !== id);
-    } else if (tipo === 'despesa') {
-        despesas = despesas.filter(d => d.id !== id);
+    database.ref(KEY_INVESTIMENTOS).child(id).remove();
+}
+
+function adicionarMeta() {
+    const desc = document.getElementById('metaDesc').value;
+    const alvo = parseFloat(document.getElementById('metaAlvo').value);
+    const atual = parseFloat(document.getElementById('metaAtual').value);
+
+    if (desc && !isNaN(alvo) && alvo > 0 && !isNaN(atual) && atual >= 0) {
+        const meta = {
+            id: Date.now(),
+            descricao: desc,
+            alvo: alvo,
+            atual: atual,
+            progresso: (atual / alvo) * 100
+        };
+        database.ref(KEY_METAS).push(meta);
+        document.getElementById('metaDesc').value = '';
+        document.getElementById('metaAlvo').value = '';
+        document.getElementById('metaAtual').value = '';
+    } else {
+        alert("Por favor, preencha todos os campos com valores válidos.");
     }
-    salvarDados();
-    carregarDados(); // Recarrega tudo para atualizar
+}
+
+function renderizarListaMetas() {
+    const listaDiv = document.getElementById('listaMetas');
+    listaDiv.innerHTML = '';
+    
+    metas.forEach(item => {
+        const progress = item.progresso > 100 ? 100 : item.progresso;
+        const metaDiv = document.createElement('div');
+        metaDiv.classList.add('metas-section');
+        metaDiv.innerHTML = `
+            <h3>${item.descricao}</h3>
+            <p>Valor atual: <strong>${formatarValor(item.atual)}</strong> de <strong>${formatarValor(item.alvo)}</strong></p>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${progress.toFixed(2)}%;">
+                    ${progress.toFixed(0)}%
+                </div>
+            </div>
+            <button class="form-add-btn" style="background: #e74c3c; box-shadow: none; margin-top: 15px;" onclick="removerMetaPorId('${item.id}')">Excluir Meta</button>
+        `;
+        listaDiv.appendChild(metaDiv);
+    });
+}
+
+function removerMetaPorId(id) {
+    let confirma = confirm("Tem certeza que deseja apagar esta meta?");
+    if (!confirma) return;
+
+    database.ref(KEY_METAS).child(id).remove();
 }
 
 function mostrarConteudo(id) {
@@ -229,7 +345,6 @@ function mostrarConteudo(id) {
     document.getElementById(`content-${id}`).classList.add('active');
     document.getElementById(`menu-${id}`).classList.add('active');
 
-    // Garante que os gráficos/listas das seções ativas sejam renderizados
     if (id === 'relatorios') {
         renderizarGraficoRelatorios();
     } else if (id === 'despesas') {
@@ -244,7 +359,7 @@ function mostrarConteudo(id) {
 function alternarCampos() {
     const tipo = document.getElementById('transacaoTipo').value;
     const categoriaSelect = document.getElementById('transacaoCategoria');
-            
+    
     categoriaSelect.innerHTML = '';
 
     if (tipo === 'receita') {
@@ -265,10 +380,10 @@ function alternarCampos() {
         });
     }
 }
-        
+
 function renderizarGraficoDashboard() {
     const ctx = document.getElementById('receitasDespesasChart').getContext('2d');
-            
+    
     if (dashboardChartInstance) {
         dashboardChartInstance.destroy();
     }
@@ -284,8 +399,8 @@ function renderizarGraficoDashboard() {
             datasets: [{
                 data: [percentualReceita.toFixed(2), percentualDespesa.toFixed(2)],
                 backgroundColor: [
-                    '#2ecc71', /* Verde mais vibrante */
-                    '#e74c3c'  /* Vermelho mais suave */
+                    '#2ecc71',
+                    '#e74c3c'
                 ],
                 borderColor: '#fff',
                 borderWidth: 2
@@ -294,7 +409,7 @@ function renderizarGraficoDashboard() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '65%', /* Levemente maior */
+            cutout: '65%',
             plugins: {
                 legend: {
                     display: false
@@ -315,7 +430,7 @@ function renderizarGraficoDashboard() {
 
 function renderizarGraficoRelatorios() {
     const ctx = document.getElementById('despesasPorCategoriaChart').getContext('2d');
-            
+    
     if (relatoriosChartInstance) {
         relatoriosChartInstance.destroy();
     }
@@ -340,15 +455,15 @@ function renderizarGraficoRelatorios() {
                 label: 'Total Gasto',
                 data: data,
                 backgroundColor: [
-                    '#5dade2', /* Azul claro */
-                    '#f7dc6f', /* Amarelo */
-                    '#a569bd', /* Roxo */
-                    '#58d68d', /* Verde água */
-                    '#eb984e', /* Laranja */
-                    '#e74c3c', /* Vermelho */
-                    '#3498db', /* Azul médio */
-                    '#2ecc71', /* Verde */
-                    '#85929e'  /* Cinza */
+                    '#5dade2',
+                    '#f7dc6f',
+                    '#a569bd',
+                    '#58d68d',
+                    '#eb984e',
+                    '#e74c3c',
+                    '#3498db',
+                    '#2ecc71',
+                    '#85929e'
                 ],
                 borderColor: [
                     '#3498db',
@@ -404,115 +519,4 @@ function renderizarGraficoRelatorios() {
             }
         }
     });
-}
-
-function adicionarInvestimento() {
-    const desc = document.getElementById('investimentoDesc').value;
-    const valor = parseFloat(document.getElementById('investimentoValor').value);
-
-    if (desc && !isNaN(valor) && valor > 0) {
-        const investimento = {
-            id: Date.now(),
-            descricao: desc,
-            valor: valor,
-            data: new Date().toLocaleDateString('pt-BR')
-        };
-        investimentos.push(investimento);
-        salvarDados();
-        renderizarListaInvestimentos();
-        document.getElementById('investimentoDesc').value = '';
-        document.getElementById('investimentoValor').value = '';
-    } else {
-        alert("Por favor, preencha a descrição e um valor válido.");
-    }
-}
-
-function renderizarListaInvestimentos() {
-    const listaTbody = document.getElementById('listaInvestimentos');
-    listaTbody.innerHTML = '';
-
-    const investimentosOrdenados = [...investimentos].sort((a, b) => {
-        const [dA, mA, aA] = a.data.split('/').map(Number);
-        const [dB, mB, aB] = b.data.split('/').map(Number);
-        const dataA = new Date(aA, mA - 1, dA);
-        const dataB = new Date(aB, mB - 1, dB);
-        return dataB - dataA;
-    });
-
-    investimentosOrdenados.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${item.descricao}</td>
-            <td>${formatarValor(item.valor)}</td>
-            <td>${item.data}</td>
-            <td>
-                <button onclick="removerInvestimentoPorId(${item.id})">🗑️</button>
-            </td>
-        `;
-        listaTbody.appendChild(tr);
-    });
-}
-
-function removerInvestimentoPorId(id) {
-    let confirma = confirm("Tem certeza que deseja apagar este investimento?");
-    if (!confirma) return;
-
-    investimentos = investimentos.filter(item => item.id !== id);
-    salvarDados();
-    renderizarListaInvestimentos();
-}
-
-function adicionarMeta() {
-    const desc = document.getElementById('metaDesc').value;
-    const alvo = parseFloat(document.getElementById('metaAlvo').value);
-    const atual = parseFloat(document.getElementById('metaAtual').value);
-
-    if (desc && !isNaN(alvo) && alvo > 0 && !isNaN(atual) && atual >= 0) {
-        const meta = {
-            id: Date.now(),
-            descricao: desc,
-            alvo: alvo,
-            atual: atual,
-            progresso: (atual / alvo) * 100
-        };
-        metas.push(meta);
-        salvarDados();
-        renderizarListaMetas();
-        document.getElementById('metaDesc').value = '';
-        document.getElementById('metaAlvo').value = '';
-        document.getElementById('metaAtual').value = '';
-    } else {
-        alert("Por favor, preencha todos os campos com valores válidos.");
-    }
-}
-
-function renderizarListaMetas() {
-    const listaDiv = document.getElementById('listaMetas');
-    listaDiv.innerHTML = '';
-            
-    metas.forEach(item => {
-        const progress = item.progresso > 100 ? 100 : item.progresso;
-        const metaDiv = document.createElement('div');
-        metaDiv.classList.add('metas-section'); // Reutiliza o estilo de seção
-        metaDiv.innerHTML = `
-            <h3>${item.descricao}</h3>
-            <p>Valor atual: <strong>${formatarValor(item.atual)}</strong> de <strong>${formatarValor(item.alvo)}</strong></p>
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: ${progress.toFixed(2)}%;">
-                    ${progress.toFixed(0)}%
-                </div>
-            </div>
-            <button class="form-add-btn" style="background: #e74c3c; box-shadow: none; margin-top: 15px;" onclick="removerMetaPorId(${item.id})">Excluir Meta</button>
-        `;
-        listaDiv.appendChild(metaDiv);
-    });
-}
-
-function removerMetaPorId(id) {
-    let confirma = confirm("Tem certeza que deseja apagar esta meta?");
-    if (!confirma) return;
-
-    metas = metas.filter(item => item.id !== id);
-    salvarDados();
-    renderizarListaMetas();
 }
