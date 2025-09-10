@@ -9,6 +9,21 @@
 </head>
 <body onload="initApp()">
 
+    <div id="auth-container">
+        <h2>Bem-vindo!</h2>
+        <p>Faça login ou crie uma conta para começar a gerenciar suas finanças.</p>
+
+        <div class="auth-form">
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-password" placeholder="Senha">
+            <div class="auth-buttons">
+                <button id="login-btn">Entrar</button>
+                <button id="signup-btn">Criar Conta</button>
+            </div>
+            <p id="auth-error" class="error-message"></p>
+        </div>
+    </div>
+
     <div class="app-container">
 
         <div class="sidebar">
@@ -251,10 +266,14 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
         // Sua configuração do projeto Firebase
         const firebaseConfig = {
@@ -268,7 +287,10 @@
 
         // Inicializa o Firebase e o banco de dados
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        window.firebase = {
+            database: () => getDatabase(app),
+            auth: () => getAuth(app)
+        };
     </script>
     
     <script src="main.js"></script>
