@@ -1,6 +1,24 @@
-// Acessa os objetos globais definidos no index.html (já que o usuário está expondo eles via window)
-const database = window.firebase.database;
-const auth = window.firebase.auth;
+// A V I S O: Substitua os valores abaixo com as suas credenciais do Firebase!
+const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SEU_AUTH_DOMAIN",
+    databaseURL: "SUA_DATABASE_URL",
+    projectId: "SEU_PROJECT_ID",
+    storageBucket: "SEU_STORAGE_BUCKET",
+    messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+    appId: "SEU_APP_ID",
+    measurementId: "SEU_MEASUREMENT_ID"
+};
+
+// Importa as funções do Firebase que você precisa
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { getDatabase, ref, set, onValue, remove, push, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+// Inicializa o Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
 
 // Variáveis de escopo global
 let totalReceitas = 0;
@@ -39,8 +57,8 @@ function carregarDados() {
     const caminhoMesAno = getCaminhoMesAno();
 
     // Carrega dados do usuário (premium, nome, etc)
-    const userRef = database.ref(`${KEY_USERS}/${currentUserId}`);
-    userRef.on('value', (snapshot) => {
+    const userRef = ref(database, `${KEY_USERS}/${currentUserId}`);
+    onValue(userRef, (snapshot) => {
         const userData = snapshot.val();
         if (userData) {
             document.querySelector('.user-profile h3').textContent = userData.name || 'Usuário';
@@ -50,8 +68,8 @@ function carregarDados() {
     });
 
     // Carrega os dados de receitas do mês/ano
-    const receitasRef = database.ref(`${KEY_RECEITAS}/${currentUserId}/${caminhoMesAno}`);
-    receitasRef.on('value', (snapshot) => {
+    const receitasRef = ref(database, `${KEY_RECEITAS}/${currentUserId}/${caminhoMesAno}`);
+    onValue(receitasRef, (snapshot) => {
         receitas = [];
         snapshot.forEach(childSnapshot => {
             receitas.push({ ...childSnapshot.val(), id: childSnapshot.key });
@@ -63,8 +81,8 @@ function carregarDados() {
     });
 
     // Carrega os dados de despesas do mês/ano
-    const despesasRef = database.ref(`${KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}`);
-    despesasRef.on('value', (snapshot) => {
+    const despesasRef = ref(database, `${KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}`);
+    onValue(despesasRef, (snapshot) => {
         despesas = [];
         snapshot.forEach(childSnapshot => {
             despesas.push({ ...childSnapshot.val(), id: childSnapshot.key });
@@ -78,8 +96,8 @@ function carregarDados() {
     });
 
     // Carrega os dados globais (investimentos e metas)
-    const investimentosRef = database.ref(`${KEY_INVESTIMENTOS}/${currentUserId}`);
-    investimentosRef.on('value', (snapshot) => {
+    const investimentosRef = ref(database, `${KEY_INVESTIMENTOS}/${currentUserId}`);
+    onValue(investimentosRef, (snapshot) => {
         investimentos = [];
         snapshot.forEach(childSnapshot => {
             investimentos.push({ ...childSnapshot.val(), id: childSnapshot.key });
@@ -87,8 +105,8 @@ function carregarDados() {
         renderizarListaInvestimentos();
     });
 
-    const metasRef = database.ref(`${KEY_METAS}/${currentUserId}`);
-    metasRef.on('value', (snapshot) => {
+    const metasRef = ref(database, `${KEY_METAS}/${currentUserId}`);
+    onValue(metasRef, (snapshot) => {
         metas = [];
         snapshot.forEach(childSnapshot => {
             metas.push({ ...childSnapshot.val(), id: childSnapshot.key });
@@ -101,8 +119,8 @@ function limparDados() {
     const confirma = confirm("Tem certeza que deseja apagar todas as movimentações (receitas e despesas) deste mês?");
     if (confirma && currentUserId) {
         const caminhoMesAno = getCaminhoMesAno();
-        database.ref(`${KEY_RECEITAS}/${currentUserId}/${caminhoMesAno}`).remove();
-        database.ref(`${KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}`).remove();
+        remove(ref(database, `${KEY_RECEITAS}/${currentUserId}/${caminhoMesAno}`));
+        remove(ref(database, `${KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}`));
     }
 }
 
@@ -126,7 +144,7 @@ function initApp() {
     document.getElementById('horaAtual').textContent = `${hora} ${saudacao}`;
 
     // Observa o estado de autenticação
-    window.onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUserId = user.uid;
             document.querySelector('.app-container').style.display = 'flex';
@@ -182,7 +200,7 @@ function handleLogin() {
     const password = document.getElementById('auth-password').value;
     const errorEl = document.getElementById('auth-error');
 
-    window.signInWithEmailAndPassword(auth, email, password)
+    signInWithEmailAndPassword(auth, email, password)
         .then(() => {
             errorEl.textContent = '';
         })
@@ -207,10 +225,10 @@ function handleSignup() {
         return;
     }
 
-    window.createUserWithEmailAndPassword(auth, email, password)
+    createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             const user = userCredential.user;
-            window.set(window.ref(database, `${KEY_USERS}/${user.uid}`), {
+            set(ref(database, `${KEY_USERS}/${user.uid}`), {
                 email: email,
                 isPremium: false,
                 name: 'Novo Usuário'
@@ -227,7 +245,7 @@ function handleSignup() {
 }
 
 function handleLogout() {
-    window.signOut(auth)
+    signOut(auth)
         .then(() => {
             console.log("Usuário deslogado com sucesso!");
         })
@@ -259,7 +277,7 @@ function adicionarTransacao() {
     const valorInput = document.getElementById('transacaoValor');
     const valor = parseFloat(valorInput.value);
     const tipo = document.getElementById('transacaoTipo').value;
-    const categoria = tipo === 'despesa' ? document.getElementById('transacaoCategoria').value : document.getElementById('transacaoCategoria').value;
+    const categoria = document.getElementById('transacaoCategoria').value;
     const meioPagamento = document.getElementById('tipoPagamento').value;
     const caminhoMesAno = getCaminhoMesAno();
 
@@ -272,8 +290,9 @@ function adicionarTransacao() {
             meioPagamento: meioPagamento,
             data: new Date().toLocaleDateString('pt-BR')
         };
-        const dbRef = database.ref(`${tipo === 'receita' ? KEY_RECEITAS : KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}`).push();
-        dbRef.set(transacao);
+        
+        const dbRef = push(ref(database, `${tipo === 'receita' ? KEY_RECEITAS : KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}`));
+        set(dbRef, transacao);
 
         document.getElementById('transacaoDesc').value = '';
         document.getElementById('transacaoValor').value = '';
@@ -290,7 +309,7 @@ function removerTransacaoPorId(id, tipo) {
     if (!confirma) return;
 
     const caminhoMesAno = getCaminhoMesAno();
-    database.ref(`${tipo === 'receita' ? KEY_RECEITAS : KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}/${id}`).remove();
+    remove(ref(database, `${tipo === 'receita' ? KEY_RECEITAS : KEY_DESPESAS}/${currentUserId}/${caminhoMesAno}/${id}`));
 }
 
 function renderizarListaMovimentacoes() {
@@ -372,8 +391,8 @@ function adicionarInvestimento() {
             valor: valor,
             data: new Date().toLocaleDateString('pt-BR')
         };
-        const dbRef = database.ref(`${KEY_INVESTIMENTOS}/${currentUserId}`).push();
-        dbRef.set(investimento);
+        const dbRef = push(ref(database, `${KEY_INVESTIMENTOS}/${currentUserId}`));
+        set(dbRef, investimento);
         document.getElementById('investimentoDesc').value = '';
         document.getElementById('investimentoValor').value = '';
     } else {
@@ -412,7 +431,7 @@ function removerInvestimentoPorId(id) {
     let confirma = confirm("Tem certeza que deseja apagar este investimento?");
     if (!confirma) return;
 
-    database.ref(`${KEY_INVESTIMENTOS}/${currentUserId}/${id}`).remove();
+    remove(ref(database, `${KEY_INVESTIMENTOS}/${currentUserId}/${id}`));
 }
 
 function adicionarMeta() {
@@ -431,8 +450,8 @@ function adicionarMeta() {
             atual: atual,
             progresso: (atual / alvo) * 100
         };
-        const dbRef = database.ref(`${KEY_METAS}/${currentUserId}`).push();
-        dbRef.set(meta);
+        const dbRef = push(ref(database, `${KEY_METAS}/${currentUserId}`));
+        set(dbRef, meta);
         document.getElementById('metaDesc').value = '';
         document.getElementById('metaAlvo').value = '';
         document.getElementById('metaAtual').value = '';
@@ -468,7 +487,7 @@ function removerMetaPorId(id) {
     let confirma = confirm("Tem certeza que deseja apagar esta meta?");
     if (!confirma) return;
 
-    database.ref(`${KEY_METAS}/${currentUserId}/${id}`).remove();
+    remove(ref(database, `${KEY_METAS}/${currentUserId}/${id}`));
 }
 
 function mostrarConteudo(id) {
@@ -624,4 +643,6 @@ function renderizarGraficoRelatorios() {
 }
 
 // Inicia o aplicativo quando a página é carregada
-initApp();
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+});
