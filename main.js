@@ -1,21 +1,21 @@
-// A V I S O: Substitua os valores abaixo com as suas credenciais do Firebase!
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { getDatabase, ref, set, onValue, remove, push, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+import "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_AUTH_DOMAIN",
-    databaseURL: "SUA_DATABASE_URL",
-    projectId: "SEU_PROJECT_ID",
-    storageBucket: "SEU_STORAGE_BUCKET",
-    messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-    appId: "SEU_APP_ID",
-    measurementId: "SEU_MEASUREMENT_ID"
+    apiKey: "AIzaSyDPkYOG9BdBkGCVIZOIQigKMN-yQP_p1S8",
+    authDomain: "controle-financeiro-55062.firebaseapp.com",
+    projectId: "controle-financeiro-55062",
+    storageBucket: "controle-financeiro-55062.firebasestorage.app",
+    messagingSenderId: "96852370466",
+    appId: "1:96852370466:web:ef255f1224b70b2428967b",
+    databaseURL: "https://controle-financeiro-55062-default-rtdb.firebaseio.com"
 };
 
-// Importa as funções do Firebase que você precisa
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import { getDatabase, ref, set, onValue, remove, push, update } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
-
-// Inicializa o Firebase
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
